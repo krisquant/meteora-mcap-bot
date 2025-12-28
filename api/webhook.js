@@ -10,6 +10,9 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Log incoming update for debugging
+    console.log('Received webhook update:', JSON.stringify(req.body, null, 2));
+    
     // Process the webhook update
     await bot.processUpdate(req.body);
     
@@ -17,8 +20,9 @@ export default async function handler(req, res) {
     res.status(200).json({ ok: true });
   } catch (error) {
     console.error('Error processing webhook:', error);
+    console.error('Error stack:', error.stack);
     // Still return 200 to prevent Telegram from retrying
-    res.status(200).json({ ok: true });
+    res.status(200).json({ ok: true, error: error.message });
   }
 }
 
