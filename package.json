@@ -1,0 +1,26 @@
+{
+  "name": "meteora-mcap-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot to show Meteora DLMM pool ranges in MCAP terms",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "meteora",
+    "solana",
+    "mcap"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "node-telegram-bot-api": "^0.64.0",
+    "axios": "^1.6.2",
+    "@solana/web3.js": "^1.87.6"
+  }
+}
+
