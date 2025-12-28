@@ -31,7 +31,9 @@ export default async function handler(req, res) {
 
   try {
     const bot = new TelegramBot(BOT_TOKEN);
-    const webhookPath = `${WEBHOOK_URL}/api/webhook`;
+    // Remove trailing slash from WEBHOOK_URL if present, then add /api/webhook
+    const baseUrl = WEBHOOK_URL.replace(/\/$/, '');
+    const webhookPath = `${baseUrl}/api/webhook`;
     
     // Set webhook
     await bot.setWebHook(webhookPath);
