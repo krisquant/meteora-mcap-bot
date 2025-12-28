@@ -217,9 +217,15 @@ function setupBotHandlers() {
   // Handle messages with pool links and price ranges
   bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
-  const text = msg.text;
+  let text = msg.text;
   
-  console.log('📨 Message received:', { chatId, text: text?.substring(0, 50), messageId: msg.message_id });
+  console.log('📨 Message received:', { 
+    chatId, 
+    text: text?.substring(0, 100), 
+    messageId: msg.message_id,
+    hasEntities: !!msg.entities,
+    entities: msg.entities
+  });
 
   // Skip commands
   if (text && text.startsWith('/')) {
@@ -227,47 +233,79 @@ function setupBotHandlers() {
     return;
   }
 
+  // Skip if no text
+  if (!text) {
+    console.log('⏭️ Skipping message with no text');
+    return;
+  }
+
+  // Extract URLs from message entities if text doesn't contain URL directly
+  // Telegram formats links, so we need to extract from entities
+  if (msg.entities) {
+    for (const entity of msg.entities) {
+      if (entity.type === 'url' || entity.type === 'text_link') {
+        const urlText = text.substring(entity.offset, entity.offset + entity.length);
+        if (urlText.startsWith('http')) {
+          text = text.replace(urlText, urlText); // Keep the URL in text
+        } else if (entity.url) {
+          text = text + ' ' + entity.url; // Add URL from entity
+        }
+      }
+    }
+  }
+
   try {
+    console.log('🔍 Processing text:', text.substring(0, 200));
+    
     // Extract pool URL
     const urlMatch = text.match(/https?:\/\/[^\s]+/);
     if (!urlMatch) {
-      bot.sendMessage(chatId, '❌ Please provide a valid Meteora pool URL');
+      console.log('❌ No URL found in message');
+      await bot.sendMessage(chatId, '❌ Please provide a valid Meteora pool URL');
       return;
     }
 
     const poolUrl = urlMatch[0];
+    console.log('🔗 Found URL:', poolUrl);
+    
     const poolAddress = extractPoolAddress(poolUrl);
     
     if (!poolAddress) {
-      bot.sendMessage(chatId, '❌ Could not extract pool address from URL');
+      console.log('❌ Could not extract pool address from:', poolUrl);
+      await bot.sendMessage(chatId, '❌ Could not extract pool address from URL');
       return;
     }
+    
+    console.log('📍 Pool address:', poolAddress);
 
     // Extract price range
     const priceRangeMatch = text.match(/([\d.₀₁₂₃₄₅₆₇₈₉0-9]+)\s*-\s*([\d.₀₁₂₃₄₅₆₇₈₉0-9]+)/);
     if (!priceRangeMatch) {
-      bot.sendMessage(chatId, '❌ Please provide a price range (e.g., 0.0₄24685899 - 0.0₄49048276)');
+      console.log('❌ No price range found in text');
+      await bot.sendMessage(chatId, '❌ Please provide a price range (e.g., 0.0₄24685899 - 0.0₄49048276)');
       return;
     }
 
     const minPriceStr = priceRangeMatch[1];
     const maxPriceStr = priceRangeMatch[2];
+    console.log('💰 Price range:', minPriceStr, '-', maxPriceStr);
 
-    bot.sendMessage(chatId, '⏳ Calculating MCAP range...');
+    await bot.sendMessage(chatId, '⏳ Calculating MCAP range...');
 
     // Parse prices
     const minPrice = parsePrice(minPriceStr);
     const maxPrice = parsePrice(maxPriceStr);
 
     if (isNaN(minPrice) || isNaN(maxPrice)) {
-      bot.sendMessage(chatId, '❌ Invalid price format');
+      console.log('❌ Invalid price format:', { minPrice, maxPrice });
+      await bot.sendMessage(chatId, '❌ Invalid price format');
       return;
     }
 
     // Get SOL price
     const solPrice = await getSOLPrice();
     if (!solPrice) {
-      bot.sendMessage(chatId, '❌ Could not fetch SOL price');
+      await bot.sendMessage(chatId, '❌ Could not fetch SOL price');
       return;
     }
 
@@ -321,7 +359,7 @@ function setupBotHandlers() {
           // This is a simplified approach - actual DLMM decoding would require the program IDL
           // For now, we'll ask user to provide supply if API fails
           if (!tokenSupply) {
-            bot.sendMessage(chatId, 
+            await bot.sendMessage(chatId, 
               '⚠️ Could not automatically fetch token supply.\n\n' +
               'Please provide the token supply manually, or verify the pool address is correct.\n\n' +
               'You can find token supply on Solscan or other explorers.'
@@ -335,7 +373,7 @@ function setupBotHandlers() {
     }
 
     if (!tokenSupply) {
-      bot.sendMessage(chatId, '❌ Could not fetch token supply. Please verify the pool address or provide supply manually.');
+      await bot.sendMessage(chatId, '❌ Could not fetch token supply. Please verify the pool address or provide supply manually.');
       return;
     }
 
@@ -343,7 +381,7 @@ function setupBotHandlers() {
     const mcapRange = calculateMCAPRange(minPrice, maxPrice, tokenSupply, solPrice);
 
     if (!mcapRange) {
-      bot.sendMessage(chatId, '❌ Could not calculate MCAP range');
+      await bot.sendMessage(chatId, '❌ Could not calculate MCAP range');
       return;
     }
 
@@ -373,11 +411,17 @@ function setupBotHandlers() {
       `📈 TradingView Lines:\n` +
       `\`\`\`\n${mcapRange.min}\n${mcapRange.max}\n\`\`\``;
 
-    bot.sendMessage(chatId, response, { parse_mode: 'Markdown' });
+    await bot.sendMessage(chatId, response, { parse_mode: 'Markdown' });
+    console.log('✅ MCAP response sent successfully');
 
   } catch (error) {
-    console.error('Error processing message:', error);
-    bot.sendMessage(chatId, `❌ Error: ${error.message}`);
+    console.error('❌ Error processing message:', error);
+    console.error('Error stack:', error.stack);
+    try {
+      await bot.sendMessage(chatId, `❌ Error: ${error.message}`);
+    } catch (sendError) {
+      console.error('❌ Failed to send error message:', sendError);
+    }
   }
   });
 }
