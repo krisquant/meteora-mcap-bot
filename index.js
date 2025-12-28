@@ -172,43 +172,60 @@ function formatMCAP(value) {
 // Setup all bot handlers
 function setupBotHandlers() {
   // Main command handler
-  bot.onText(/\/start/, (msg) => {
+  bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
-    bot.sendMessage(chatId, 
-      '👋 Welcome to Meteora MCAP Bot!\n\n' +
-      'Send me:\n' +
-      '1. A Meteora DLMM pool link\n' +
-      '2. Price range (e.g., 0.0₄24685899 - 0.0₄49048276)\n\n' +
-      'Example:\n' +
-      'https://www.meteora.ag/dlmm/52E9CZM9wa8kXYGA5dNBtso6ekSo7vMWxgCHGxQXtSby\n' +
-      '0.0₄24685899 - 0.0₄49048276'
-    );
+    console.log('📨 /start command received from chat:', chatId);
+    try {
+      await bot.sendMessage(chatId, 
+        '👋 Welcome to Meteora MCAP Bot!\n\n' +
+        'Send me:\n' +
+        '1. A Meteora DLMM pool link\n' +
+        '2. Price range (e.g., 0.0₄24685899 - 0.0₄49048276)\n\n' +
+        'Example:\n' +
+        'https://www.meteora.ag/dlmm/52E9CZM9wa8kXYGA5dNBtso6ekSo7vMWxgCHGxQXtSby\n' +
+        '0.0₄24685899 - 0.0₄49048276'
+      );
+      console.log('✅ /start response sent to chat:', chatId);
+    } catch (error) {
+      console.error('❌ Error sending /start response:', error);
+    }
   });
 
-  bot.onText(/\/help/, (msg) => {
+  bot.onText(/\/help/, async (msg) => {
     const chatId = msg.chat.id;
-    bot.sendMessage(chatId,
-      '📖 How to use:\n\n' +
-      'Send me a message with:\n' +
-      '• Meteora pool URL\n' +
-      '• Price range (min - max)\n\n' +
-      'The bot will calculate the MCAP range based on:\n' +
-      '• Token price in SOL\n' +
-      '• Token supply\n' +
-      '• Current SOL price\n\n' +
-      'Format example:\n' +
-      'https://www.meteora.ag/dlmm/POOL_ADDRESS\n' +
-      '0.0₄24685899 - 0.0₄49048276'
-    );
+    console.log('📨 /help command received from chat:', chatId);
+    try {
+      await bot.sendMessage(chatId,
+        '📖 How to use:\n\n' +
+        'Send me a message with:\n' +
+        '• Meteora pool URL\n' +
+        '• Price range (min - max)\n\n' +
+        'The bot will calculate the MCAP range based on:\n' +
+        '• Token price in SOL\n' +
+        '• Token supply\n' +
+        '• Current SOL price\n\n' +
+        'Format example:\n' +
+        'https://www.meteora.ag/dlmm/POOL_ADDRESS\n' +
+        '0.0₄24685899 - 0.0₄49048276'
+      );
+      console.log('✅ /help response sent to chat:', chatId);
+    } catch (error) {
+      console.error('❌ Error sending /help response:', error);
+    }
   });
 
   // Handle messages with pool links and price ranges
   bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text;
+  
+  console.log('📨 Message received:', { chatId, text: text?.substring(0, 50), messageId: msg.message_id });
 
   // Skip commands
-  if (text.startsWith('/')) return;
+  if (text && text.startsWith('/')) {
+    console.log('⏭️ Skipping command (handled by onText)');
+    return;
+  }
 
   try {
     // Extract pool URL
