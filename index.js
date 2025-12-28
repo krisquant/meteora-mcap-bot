@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 // Initialize bot - use webhook if WEBHOOK_URL is set, otherwise use polling
 // For serverless, don't start polling automatically
 const botOptions = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
-  ? {} // Serverless - no polling, webhook will be handled by API route
+  ? { onlyFirstMatch: true } // Serverless - no polling, webhook will be handled by API route
   : WEBHOOK_URL
   ? { webHook: true }
   : { polling: true };

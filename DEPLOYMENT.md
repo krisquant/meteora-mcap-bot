@@ -28,7 +28,7 @@ This guide covers multiple hosting options for your Telegram bot.
    git add .
    git commit -m "Initial commit"
    git remote add origin https://github.com/yourusername/meteora-mcap-bot.git
-   git push -u origin main
+  git 
    ```
 
 2. **Deploy to Vercel**
